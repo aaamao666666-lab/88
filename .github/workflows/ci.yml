@@ -1,0 +1,19 @@
+name: AI Work Tools CI
+on:
+  push:
+    branches: [ai-work-tools]
+  pull_request:
+    branches: [ai-work-tools]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm install
+      - run: node --check server.js
+      - run: node --check public/app.js
+      - run: npx playwright install --with-deps chromium
