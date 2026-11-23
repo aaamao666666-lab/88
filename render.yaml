@@ -17,4 +17,5 @@ services:
       - key: SESSION_SECRET
         generateValue: true
       - key: ALLOWED_ORIGIN
+        sync: false      - key: BROWSER_ALLOWED_HOSTS
         sync: false
