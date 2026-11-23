@@ -1,1 +1,17 @@
-{"name":"ai-work-tools","version":"1.0.0","private":true,"type":"module","scripts":{"start":"node server.js"},"dependencies":{"express":"^4.21.2","helmet":"^8.0.0","cors":"^2.8.5","dotenv":"^16.4.7"}}
+{
+  "name": "ai-work-tools",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "playwright": "^1.56.1"
+  }
+}
