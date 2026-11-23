@@ -1,4 +1,4 @@
-import express from "express";import helmet from "helmet";import cors from "cors";import dotenv from "dotenv";import crypto from "node:crypto";import path from "node:path";import {fileURLToPath} from "node:url";
+import express from "express";import helmet from "helmet";import cors from "cors";import dotenv from "dotenv";import crypto from "node:crypto";import path from "node:path";import {fileURLToPath} from "node:url";import {chromium} from "playwright";
 dotenv.config();const app=express(),dir=path.dirname(fileURLToPath(import.meta.url)),port=process.env.PORT||8787,user=process.env.ADMIN_USERNAME||"admin",pass=process.env.ADMIN_PASSWORD||"CHANGE_THIS_PASSWORD",secret=process.env.SESSION_SECRET||"dev-only-change-me",sessions=new Map(),logs=[];
 const tools=[{id:"browser",name:"浏览器自动化",desc:"网页访问、点击与流程自动化",status:"待接入",enabled:true},{id:"terminal",name:"终端执行",desc:"受控命令与脚本运行",status:"待接入",enabled:false},{id:"files",name:"文件处理",desc:"读取、转换与打包",status:"本地可用",enabled:true},{id:"github",name:"GitHub 工作流",desc:"仓库检查与代码提交",status:"连接器可用",enabled:true},{id:"image",name:"图像处理",desc:"图片生成、编辑与素材处理",status:"待接入",enabled:true}];
 app.use(helmet({contentSecurityPolicy:false}));app.use(cors({origin:process.env.ALLOWED_ORIGIN||true}));app.use(express.json({limit:"1mb"}));app.use(express.static(path.join(dir,"public")));
@@ -9,4 +9,10 @@ app.post("/api/logout",guard,(q,s)=>{sessions.delete(q.headers["x-session-id"]);
 app.get("/api/admin/overview",guard,(q,s)=>s.json({uptime:Math.round(process.uptime()),toolCount:tools.length,enabledCount:tools.filter(x=>x.enabled).length,tools,logs:logs.slice(0,8)}));
 app.get("/api/admin/tools",guard,(q,s)=>s.json({tools}));
 app.patch("/api/admin/tools/:id",guard,(q,s)=>{let t=tools.find(x=>x.id===q.params.id);if(!t)return s.status(404).json({error:"工具不存在"});if(typeof q.body.enabled!=="boolean")return s.status(400).json({error:"enabled 必须为布尔值"});t.enabled=q.body.enabled;log("工具状态更新",t.name);s.json({ok:true,tool:t})});
-app.get("/api/admin/logs",guard,(q,s)=>s.json({logs}));app.get("*",(q,s)=>s.sendFile(path.join(dir,"public/index.html")));app.listen(port,()=>{console.log("AI-WORK-TOOLS on "+port);log("服务启动")});
+app.get("/api/admin/logs",guard,(q,s)=>s.json({logs}));
+app.post("/api/admin/browser/screenshot",guard,async(q,s)=>{
+  let target;try{target=new URL(q.body.url)}catch{return s.status(400).json({error:"请输入有效网址"})}
+  if(!["http:","https:"].includes(target.protocol)||["localhost","127.0.0.1","0.0.0.0","::1"].includes(target.hostname))return s.status(400).json({error:"目标网址不允许"});
+  let browser;try{browser=await chromium.launch({headless:true,args:["--no-sandbox"]});const page=await browser.newPage({viewport:{width:1440,height:900}});await page.goto(target.href,{waitUntil:"domcontentloaded",timeout:20000});const title=await page.title();const shot=await page.screenshot({type:"jpeg",quality:70});log("浏览器截图",target.hostname);s.json({ok:true,title,url:page.url(),screenshot:"data:image/jpeg;base64,"+shot.toString("base64")});}catch(e){log("浏览器任务失败",String(e.message).slice(0,120));s.status(500).json({error:"浏览器执行失败: "+String(e.message).slice(0,180)});}finally{if(browser)await browser.close();}
+});
+app.get("*",(q,s)=>s.sendFile(path.join(dir,"public/index.html")));app.listen(port,()=>{console.log("AI-WORK-TOOLS on "+port);log("服务启动")});
